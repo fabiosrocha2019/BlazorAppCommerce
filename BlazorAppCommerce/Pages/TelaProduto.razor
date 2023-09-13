@@ -1,0 +1,151 @@
+﻿@page "/telaProduto"
+@using BlazorAppCommerce.Interfaces;
+@inject IProdutoService _produtoService;
+@inject IProdutoValidacoes _produtoValidacoes;
+@using BlazorAppCommerce.Models;
+@using Blazorise;
+@using Blazorise.Bootstrap;
+
+<h3>Tela de Gerenciamento de Produtos</h3>
+
+<EditForm Model="@produto" OnValidSubmit="@OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="Nome">Nome</label>
+                    <InputText id="Nome" @bind-Value="@produto.Nome" class="form-control"></InputText>
+                    <ValidationMessage For="@(() => produto.Nome)" />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="Valor">Valor</label>
+                    <InputNumber id="Valor" @bind-Value="@produto.Valor" step="0.01" class="form-control"></InputNumber>
+                    <ValidationMessage For="@(() => produto.Valor)" />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="Estoque">Estoque</label>
+                    <InputNumber id="Estoque" @bind-Value="@produto.Estoque" class="form-control"></InputNumber>
+                    <ValidationMessage For="@(() => produto.Estoque)" />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="Id">Id</label>
+                    <InputNumber id="Id" @bind-Value="@produto.Id" class="form-control" disabled></InputNumber>
+                    <ValidationMessage For="@(() => produto.Estoque)" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*<div class="form-group">
+    <label for="NumeroVendido">Número de Produtos Vendidos</label>
+    <InputNumber id="NumeroVendido" @bind-Value="@numeroProdutosVendidos"></InputNumber>
+    </div>*@
+
+    <button class="btn btn-dark"> @(produto.Id == 0 ? "Cadastrar" : "Atualizar")</button>
+
+</EditForm>
+@*<button @onclick="RegistrarVenda">Registrar Venda</button>*@
+
+<style>
+    th, td {
+        text-align: center;
+    }
+
+</style>
+
+@if (produtos != null && produtos.Any())
+{
+    <h4 class="text-center">Lista de Produtos</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Valor</th>
+                <th>Estoque</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var produto in produtos)
+            {
+                <tr>
+                    <td>@produto.Nome</td>
+                    <td>@produto.Valor.ToString("C2")</td>
+                    <td>@produto.Estoque</td>
+                    <td>
+                        <button class="btn btn-danger" @onclick="() => InativarProduto(produto.Id)">Cancelar</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="() => PreencherTela(produto.Id)">Editar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Nenhum produto encontrado.</p>
+}
+
+
+@code {
+    List<Produto> produtos;
+    Produto produto = new Produto();
+
+    protected override async Task OnInitializedAsync()
+    {
+        produtos = await _produtoService.BuscarTodosProdutos();
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (_produtoValidacoes.ValidaCamposProduto(produto))
+        {
+            if (!_produtoValidacoes.ValidaIdSolicitacao(produto.Id))
+            {
+                await _produtoService.CadastrarProduto(produto);
+            }
+            else
+            {
+                await _produtoService.AtualizarProduto(produto);
+            }
+        }
+
+        produto = new Produto();
+        produtos = await _produtoService.BuscarTodosProdutos();
+    }
+
+    private async Task InativarProduto(int ProdutoId)
+    {
+        await _produtoService.DeletarProduto(ProdutoId);
+        produtos = await _produtoService.BuscarTodosProdutos();
+
+    }
+
+    private async Task PreencherTela(int ProdutoId)
+    {
+        produto = await _produtoService.GetProdutoById(ProdutoId);
+    }
+
+    //private async Task RegistrarVenda()
+    //{
+    //    if (numeroProdutosVendidos <= 0)
+    //    {
+    //        return;
+    //    }
+
+    //    await _produtoService.GetProdutoById(numeroProdutosVendidos);
+
+    //    produtos = await _produtoService.BuscarTodosProdutos();
+    //}
+
+}
